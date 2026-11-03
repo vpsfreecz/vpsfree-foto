@@ -1,22 +1,52 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   cfg = config.services.vpsfreePhotoShow;
   app = import ../photoshow/package.nix { inherit pkgs; };
   php = import ../photoshow/runtime.nix { inherit pkgs; };
-in {
+in
+{
   options.services.vpsfreePhotoShow = {
     enable = lib.mkEnableOption "the original PhotoShow gallery on current PHP";
-    hostName = lib.mkOption { type = lib.types.str; default = "foto.vpsfree.cz"; };
-    user = lib.mkOption { type = lib.types.str; default = "foto"; };
-    group = lib.mkOption { type = lib.types.str; default = "foto"; };
-    photosDir = lib.mkOption { type = lib.types.str; default = "/var/www/foto.vpsfree.cz/fotky_galerie"; };
-    generatedDir = lib.mkOption { type = lib.types.str; default = "/var/www/foto.vpsfree.cz/fotky_thumbs"; };
-    stateDir = lib.mkOption { type = lib.types.str; default = "/var/lib/photoshow"; };
-    trustedProxyAddresses = lib.mkOption { type = lib.types.listOf lib.types.str; default = []; };
+    hostName = lib.mkOption {
+      type = lib.types.str;
+      default = "foto.vpsfree.cz";
+    };
+    user = lib.mkOption {
+      type = lib.types.str;
+      default = "foto";
+    };
+    group = lib.mkOption {
+      type = lib.types.str;
+      default = "foto";
+    };
+    photosDir = lib.mkOption {
+      type = lib.types.str;
+      default = "/var/www/foto.vpsfree.cz/fotky_galerie";
+    };
+    generatedDir = lib.mkOption {
+      type = lib.types.str;
+      default = "/var/www/foto.vpsfree.cz/fotky_thumbs";
+    };
+    stateDir = lib.mkOption {
+      type = lib.types.str;
+      default = "/var/lib/photoshow";
+    };
+    trustedProxyAddresses = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+    };
   };
   config = lib.mkIf cfg.enable {
-    users.users.${cfg.user} = { isSystemUser = true; group = lib.mkDefault cfg.group; };
-    users.groups.${cfg.group} = {};
+    users.users.${cfg.user} = {
+      isSystemUser = true;
+      group = lib.mkDefault cfg.group;
+    };
+    users.groups.${cfg.group} = { };
     systemd.tmpfiles.rules = [
       "d ${cfg.stateDir} 0700 ${cfg.user} ${cfg.group} -"
       "d ${cfg.stateDir}/sessions 0700 ${cfg.user} ${cfg.group} -"
@@ -68,10 +98,11 @@ in {
           fastcgi_read_timeout 70s;
           fastcgi_hide_header X-Powered-By;
         '';
-        "~ ^/(?:inc|src/(?:stylesheets|js)|user/themes)/[^?]+\\.(?:css|js|png|jpg|jpeg|gif|ico|woff2?|ttf|otf|eot|svg)$".extraConfig = ''
-          try_files $uri =404;
-          add_header X-Content-Type-Options nosniff always;
-        '';
+        "~ ^/(?:inc|src/(?:stylesheets|js)|user/themes)/[^?]+\\.(?:css|js|png|jpg|jpeg|gif|ico|woff2?|ttf|otf|eot|svg)$".extraConfig =
+          ''
+            try_files $uri =404;
+            add_header X-Content-Type-Options nosniff always;
+          '';
         "/".return = "404";
       };
     };

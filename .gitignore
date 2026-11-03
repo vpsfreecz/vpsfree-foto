@@ -11,3 +11,16 @@ credentials*
 .DS_Store
 __pycache__/
 *.py[cod]
+/photos/
+/generated/
+/config.php
+*.xml
+*.tar
+*.tar.gz
+*.tar.zst
+*.bundle
+*.log
+*access*.json
+*credentials*.json
+playwright-report/
+test-results/
