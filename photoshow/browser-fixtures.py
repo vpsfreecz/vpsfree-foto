@@ -13,7 +13,7 @@ import tempfile
 import xml.etree.ElementTree as ET
 
 state = Path(os.environ.get('PHOTOSHOW_STATE_DIR', '/var/lib/photoshow-preview'))
-photos = Path(os.environ.get('PHOTOSHOW_PHOTOS_DIR', strphotos))
+photos = Path(os.environ.get('PHOTOSHOW_PHOTOS_DIR', str(state / 'photos')))
 generated = Path(os.environ.get('PHOTOSHOW_GENERATED_DIR', str(state / 'generated')))
 receipt = Path(os.environ.get('PHOTOSHOW_FIXTURE_RECEIPT', '/var/backups/photoshow-port/browser-audit-fixtures.json'))
 accounts = generated / 'Conf/accounts.xml'

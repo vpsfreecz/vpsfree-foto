@@ -100,6 +100,34 @@ if (!directory || directory.includes('/git/')) throw Error('Private output direc
       await Promise.all([page.waitForNavigation(), chooser.setFiles({ name: 'first.jpg', mimeType: 'image/jpeg', buffer: image })]);
       assert.equal((await request(guest, '?t=Big&f=' + q(run + '/Public/first-1.jpg'))).status, 200);
     });
+    await check('multiple files exceeding 10 MiB in aggregate pass the unchanged proxy limit', async () => {
+      const parent = run + '/ProxyBatch';
+      const jpeg = await fs.readFile(path.join(directory, 'photoshow-upload-test.jpg'));
+      const padded = Buffer.concat([jpeg, Buffer.alloc(6 * 1024 * 1024 - jpeg.length)]);
+      await folder(run, 'ProxyBatch');
+      try {
+        await go('?f=' + q(parent)); await openPanel();
+        const chooserEvent = page.waitForEvent('filechooser');
+        await page.getByRole('button', { name: 'Upload images here', exact: true }).click();
+        const chooser = await chooserEvent;
+        await Promise.all([page.waitForNavigation({ timeout: 120000 }), chooser.setFiles([
+          { name: 'proxy-a.jpg', mimeType: 'image/jpeg', buffer: padded },
+          { name: 'proxy-b.jpg', mimeType: 'image/jpeg', buffer: padded }
+        ])]);
+        assert.equal(await page.locator('.sectionimg .item').count(), 2);
+        for (const name of ['proxy-a.jpg', 'proxy-b.jpg']) {
+          const r = await request(admin, '?t=Big&f=' + q(parent + '/' + name));
+          assert.equal(r.status, 200); assert(r.body.equals(padded));
+        }
+      } finally {
+        for (const name of ['proxy-a.jpg', 'proxy-b.jpg']) {
+          const r = await request(admin, '?t=Big&f=' + q(parent + '/' + name));
+          if (r.status === 200 && r.body.equals(padded)) await request(admin, '?a=Del', { del: parent + '/' + name });
+        }
+        const r = await request(admin, '?f=' + q(parent));
+        if (r.status === 200 && !r.body.includes("class='section sectionimg'")) await request(admin, '?a=Del', { del: parent });
+      }
+    });
     await check('album images, next/previous and keyboard', async () => {
       await go('?f=' + q(run + '/Public'));
       await page.locator('.sectionimg .item a').first().click();

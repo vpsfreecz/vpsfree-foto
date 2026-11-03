@@ -15,7 +15,7 @@ import fcntl
 import tempfile
 
 state=pathlib.Path(os.environ.get('PHOTOSHOW_STATE_DIR','/var/lib/photoshow-preview'))
-photos=pathlib.Path(os.environ.get('PHOTOSHOW_PHOTOS_DIR',str(photos)))
+photos=pathlib.Path(os.environ.get('PHOTOSHOW_PHOTOS_DIR',str(state/'photos')))
 generated=pathlib.Path(os.environ.get('PHOTOSHOW_GENERATED_DIR',str(state/'generated')))
 php='/srv/photoshow-php85-tools/bin/php'
 base=os.environ.get('PHOTOSHOW_TEST_URL','http://127.0.0.1:18085/')
