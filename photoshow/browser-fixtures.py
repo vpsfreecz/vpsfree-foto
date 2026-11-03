@@ -12,9 +12,11 @@ import sys
 import tempfile
 import xml.etree.ElementTree as ET
 
-state = Path('/var/lib/photoshow-preview')
-receipt = Path('/var/backups/photoshow-port/browser-audit-fixtures.json')
-accounts = state / 'generated/Conf/accounts.xml'
+state = Path(os.environ.get('PHOTOSHOW_STATE_DIR', '/var/lib/photoshow-preview'))
+photos = Path(os.environ.get('PHOTOSHOW_PHOTOS_DIR', strphotos))
+generated = Path(os.environ.get('PHOTOSHOW_GENERATED_DIR', str(state / 'generated')))
+receipt = Path(os.environ.get('PHOTOSHOW_FIXTURE_RECEIPT', '/var/backups/photoshow-port/browser-audit-fixtures.json'))
+accounts = generated / 'Conf/accounts.xml'
 if os.geteuid() != 0 or not accounts.is_file():
     raise SystemExit('Root on the isolated PhotoShow test VPS required')
 
@@ -57,7 +59,7 @@ with (state / 'request.lock').open('a+') as lock:
         if not re.fullmatch('[0-9a-f]{64}', expected):
             raise SystemExit('Cleanup requires the known synthetic image SHA256')
         pattern = re.compile(re.escape(data['album']) + r'[0-9]{13}')
-        folders = [p for p in (state / 'photos').iterdir() if pattern.fullmatch(p.name)]
+        folders = [p for p in photos.iterdir() if pattern.fullmatch(p.name)]
         for folder in folders:
             for file in folder.rglob('*'):
                 if file.is_symlink():
@@ -70,12 +72,12 @@ with (state / 'request.lock').open('a+') as lock:
                 root.remove(entry)
         for folder in folders:
             shutil.rmtree(folder)
-            metadata = state / 'generated/Thumbs' / folder.name
+            metadata = generated / 'Thumbs' / folder.name
             if metadata.exists():
                 shutil.rmtree(metadata)
         # Remove only receipt-owned fixture comments/shares, preserving real entries.
         for filename, tag in [('comments.xml', 'path'), ('guest_tokens.xml', 'path')]:
-            target = state / 'generated/Conf' / filename
+            target = generated / 'Conf' / filename
             if not target.exists():
                 continue
             metadata_tree = ET.parse(target)

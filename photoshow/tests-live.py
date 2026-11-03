@@ -14,11 +14,13 @@ import os
 import fcntl
 import tempfile
 
-state=pathlib.Path('/var/lib/photoshow-preview')
+state=pathlib.Path(os.environ.get('PHOTOSHOW_STATE_DIR','/var/lib/photoshow-preview'))
+photos=pathlib.Path(os.environ.get('PHOTOSHOW_PHOTOS_DIR',str(photos)))
+generated=pathlib.Path(os.environ.get('PHOTOSHOW_GENERATED_DIR',str(state/'generated')))
 php='/srv/photoshow-php85-tools/bin/php'
 base=os.environ.get('PHOTOSHOW_TEST_URL','http://127.0.0.1:18085/')
-if base not in ['http://127.0.0.1:18085/','https://foto.crucio.cz/kra/']: raise SystemExit('Only the named preview URL is allowed')
-accounts=state/'generated/Conf/accounts.xml'
+if base not in ['http://127.0.0.1:18085/','https://foto.crucio.cz/kra/','https://foto.vpsfree.cz/']: raise SystemExit('Only the named preview URL is allowed')
+accounts=generated/'Conf/accounts.xml'
 if os.geteuid()!=0 or not state.is_dir(): raise SystemExit('Isolated preview root required')
 checks=0
 def check(condition,label):
@@ -88,7 +90,7 @@ try:
     check(entry.findtext('password').startswith('$argon2id$'),'native legacy hash upgraded')
     check(admin.request('?a=Upl',{'path':'','newdir':album})[0]==403,'upload CSRF')
     check(admin.post('?a=Upl',{'path':'','newdir':album,'inherit':'1'})[0]==200,'create album')
-    folder=state/'photos'/album;check(folder.is_dir(),'album exists')
+    folder=photos/album;check(folder.is_dir(),'album exists')
     import io,zipfile
     empty_status,empty_zip,_=anonymous.request('?t=Zip&f='+urllib.parse.quote(album))
     check(empty_status==200 and zipfile.ZipFile(io.BytesIO(empty_zip)).namelist()==[],'empty album ZIP')
@@ -156,5 +158,5 @@ finally:
             for account in list(root):
                 if account.findtext('login') in created:root.remove(account)
         edit_accounts(cleanup)
-    for path in [state/'photos'/album,state/'generated/Thumbs'/album]:
+    for path in [photos/album,generated/'Thumbs'/album]:
         if path.exists():shutil.rmtree(path)

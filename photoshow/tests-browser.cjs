@@ -8,7 +8,8 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
-const base = 'https://foto.crucio.cz/kra/';
+const base = process.env.PHOTOSHOW_TEST_URL || 'https://foto.crucio.cz/kra/';
+if (!['https://foto.crucio.cz/kra/', 'https://foto.vpsfree.cz/'].includes(base)) throw Error('Unknown gallery target');
 const directory = process.env.PHOTOSHOW_QA_PRIVATE;
 if (!directory || directory.includes('/git/')) throw Error('Private output directory required');
 

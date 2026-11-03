@@ -9,7 +9,8 @@ import concurrent.futures
 import os
 import sys
 
-state=pathlib.Path('/var/lib/photoshow-preview')
+state=pathlib.Path(os.environ.get('PHOTOSHOW_STATE_DIR','/var/lib/photoshow-preview'))
+photo_root=pathlib.Path(os.environ.get('PHOTOSHOW_PHOTOS_DIR',str(state/'photos')))
 original=pathlib.Path('/var/www/foto.vpsfree.cz')
 baseline=json.loads(pathlib.Path('/var/backups/photoshow-port/original-manifest.json').read_text())
 def sha(path):
@@ -18,12 +19,12 @@ if '--copy-only' not in sys.argv:
     for name,expected in baseline.items():
         if sha(original/name)!=expected:raise AssertionError('Original source was changed')
 base=os.environ.get('PHOTOSHOW_TEST_URL','http://127.0.0.1:18085/')
-if base not in ['http://127.0.0.1:18085/','https://foto.crucio.cz/kra/']:raise SystemExit('Only preview URLs are allowed')
+if base not in ['http://127.0.0.1:18085/','https://foto.crucio.cz/kra/','https://foto.vpsfree.cz/']:raise SystemExit('Only preview URLs are allowed')
 photos={name.removeprefix('fotky_galerie/'):value for name,value in baseline.items() if name.startswith('fotky_galerie/')}
 assert len(photos)==476,'Original photo baseline changed; inspect intentional user changes'
 def verify(item):
     relative,expected=item
-    assert sha(state/'photos'/relative)==expected,'Copied original differs'
+    assert sha(photo_root/relative)==expected,'Copied original differs'
     query=urllib.parse.urlencode({'f':relative})
     for kind in ['Big','Thb']:
         with urllib.request.urlopen(base+'?t='+kind+'&'+query,timeout=80) as r:

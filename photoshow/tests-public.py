@@ -11,7 +11,8 @@ import secrets
 import os
 
 if os.geteuid()!=0:raise SystemExit('Root required on the test VPS')
-base='https://foto.crucio.cz/kra/'
+base=os.environ.get('PHOTOSHOW_TEST_URL','https://foto.crucio.cz/kra/')
+assert base in ['https://foto.crucio.cz/kra/','https://foto.vpsfree.cz/']
 jar=http.cookiejar.CookieJar()
 client=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
 def request(url,data=None,headers=None):
@@ -22,10 +23,10 @@ def request(url,data=None,headers=None):
 status,body,headers=request(base+'?t=Login')
 assert status==200 and 'WWW-Authenticate' not in headers
 cookies=headers.get_all('Set-Cookie',[])
-assert any(all(x in c.lower() for x in ['path=/kra/','secure','httponly','samesite=lax']) for c in cookies)
+assert any(all(x in c.lower() for x in ['path='+urllib.parse.urlsplit(base).path,'secure','httponly','samesite=lax']) for c in cookies)
 token=re.search(rb'name="photoshow-csrf" content="([a-f0-9]+)"',body)[1].decode()
 status,_,_=request(base+'?j=Acc');assert status==403
-status,_,_=request('https://foto.crucio.cz/');assert status==200
+status,_,_=request(base);assert status==200
 user='NoSuchPhotoUser'+secrets.token_hex(8)
 for i in range(5):
     status,_,headers=request(base+'?t=Login',{'csrf':token,'login':user,'password':'not-an-account-password'})
