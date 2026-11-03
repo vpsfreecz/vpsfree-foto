@@ -16,10 +16,34 @@ function init_dropzone() {
         input.style.display = 'none';
         if (submit) submit.style.display = 'none';
         if (hint) hint.style.display = 'none';
-        function upload() {
+        async function upload() {
             if (!input.files.length) return;
             choose.disabled = true; choose.textContent = 'Uploading…';
-            form.requestSubmit(submit);
+            if (input.files.length === 1) {
+                form.requestSubmit(submit);
+                return;
+            }
+            // The original proxy limits each request to 10 MiB. As with the old
+            // uploader, send individual files rather than one oversized batch.
+            try {
+                var files = Array.from(input.files);
+                for (var index = 0; index < files.length; index++) {
+                    choose.textContent = 'Uploading ' + (index + 1) + '/' + files.length + '…';
+                    var body = new FormData(form);
+                    body.delete('images[]'); body.append('images[]', files[index], files[index].name);
+                    var response = await fetch(form.action, {
+                        method: 'POST', body: body, credentials: 'same-origin',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                }
+                var destination = new URL(location.pathname, location.href);
+                destination.searchParams.set('f', form.elements.path.value);
+                location.assign(destination.href);
+            } catch (error) {
+                choose.disabled = false;
+                choose.textContent = 'Upload failed (' + error.message + '). Reload to see completed files.';
+            }
         }
         input.addEventListener('change', upload);
         choose.addEventListener('dragover', function (event) { event.preventDefault(); choose.classList.add('file_upload_highlight'); });
