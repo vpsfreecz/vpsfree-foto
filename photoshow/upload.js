@@ -39,7 +39,11 @@ function init_dropzone() {
                 }
                 var destination = new URL(location.pathname, location.href);
                 destination.searchParams.set('f', form.elements.path.value);
-                location.assign(destination.href);
+                if (location.pathname === destination.pathname && location.search === destination.search) {
+                    location.reload();
+                } else {
+                    location.assign(destination.href);
+                }
             } catch (error) {
                 choose.disabled = false;
                 choose.textContent = 'Upload failed (' + error.message + '). Reload to see completed files.';

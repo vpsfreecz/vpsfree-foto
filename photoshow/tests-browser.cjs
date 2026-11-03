@@ -86,6 +86,7 @@ if (!directory || directory.includes('/git/')) throw Error('Private output direc
       await Promise.all([page.waitForNavigation(), chooser.setFiles([{ name: 'first.jpg', mimeType: 'image/jpeg', buffer: image }, { name: 'second.jpg', mimeType: 'image/jpeg', buffer: image }])]);
       page.off('request', recordUpload);
       assert.equal(uploads.length, 2, 'one upload request per selected file');
+      assert.equal(await page.locator('.sectionimg .item').count(), 2, 'uploaded photos appear without manual refresh');
       assert((await page.locator('body').innerText()).includes('Public'));
       const r = await request(guest, '?t=Big&f=' + q(run + '/Public/first.jpg'));
       assert.equal(r.status, 200); assert(r.body.equals(image));
